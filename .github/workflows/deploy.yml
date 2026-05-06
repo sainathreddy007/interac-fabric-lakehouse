@@ -1,0 +1,89 @@
+name: Interac Fabric Lakehouse CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Validate Notebooks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install nbformat
+
+      - name: Validate Bronze notebooks
+        run: |
+          python -c "
+          import nbformat, os, sys
+          path = 'notebooks/bronze'
+          files = os.listdir(path)
+          for f in files:
+              nb = nbformat.read(open(f'{path}/{f}'), as_version=4)
+              print(f'✅ Valid: {f} ({len(nb.cells)} cells)')
+          "
+
+      - name: Validate Silver notebooks
+        run: |
+          python -c "
+          import nbformat, os, sys
+          path = 'notebooks/silver'
+          files = os.listdir(path)
+          for f in files:
+              nb = nbformat.read(open(f'{path}/{f}'), as_version=4)
+              print(f'✅ Valid: {f} ({len(nb.cells)} cells)')
+          "
+
+      - name: Validate Gold notebooks
+        run: |
+          python -c "
+          import nbformat, os, sys
+          path = 'notebooks/gold'
+          files = os.listdir(path)
+          for f in files:
+              nb = nbformat.read(open(f'{path}/{f}'), as_version=4)
+              print(f'✅ Valid: {f} ({len(nb.cells)} cells)')
+          "
+
+      - name: Check producer script syntax
+        run: |
+          python -m py_compile scripts/interac_producer.py
+          echo "✅ interac_producer.py syntax valid"
+
+  summary:
+    name: Pipeline Summary
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Print deployment summary
+        run: |
+          echo "========================================"
+          echo "  INTERAC FABRIC LAKEHOUSE CI/CD"
+          echo "========================================"
+          echo "Bronze notebooks:"
+          ls notebooks/bronze/
+          echo "Silver notebooks:"
+          ls notebooks/silver/
+          echo "Gold notebooks:"
+          ls notebooks/gold/
+          echo "Scripts:"
+          ls scripts/
+          echo "========================================"
+          echo "All validations passed ✅"
+          echo "========================================"
